@@ -10,8 +10,8 @@ import (
 func SetInterval(f func(), millis uint32, wg *sync.WaitGroup) func() {
 	var (
 		duration time.Duration
-		ticker *time.Ticker
-		clear chan struct{}
+		ticker   *time.Ticker
+		clear    chan struct{}
 		isClosed bool
 	)
 
@@ -45,8 +45,8 @@ func SetInterval(f func(), millis uint32, wg *sync.WaitGroup) func() {
 func SetTimeout(f func(), millis uint32, wg *sync.WaitGroup) func() {
 	var (
 		duration time.Duration
-		timer *time.Timer
-		clear chan struct{}
+		timer    *time.Timer
+		clear    chan struct{}
 		isClosed bool
 	)
 

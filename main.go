@@ -24,13 +24,20 @@ func main() {
 	}, 5000, wg)
 
 	time.Sleep(4000 * time.Millisecond)
+	log.Println("Stop interval after 4 second")
+	stopI()
 
 	stopT = jstime.SetTimeout(func() {
 		log.Println("Test new timeout")
 	}, 4500, wg)
 
+	_ = jstime.SetTimeout(func() {
+		log.Println("Stop new timeout after 4100")
+		stopT()
+	}, 4100, wg)
+
 	// Don`t stop message output after 4 seconds
-	log.Println("Stop timeout after 4 second")
+	log.Println("Stop new timeout after 4 second")
 	stopT()
 	stopT()
 	stopT()

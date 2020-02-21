@@ -12,12 +12,15 @@ func SetInterval(f func(), millis uint32, wg *sync.WaitGroup) func() {
 		duration time.Duration
 		ticker   *time.Ticker
 		clear    chan struct{}
+		mu       *sync.Mutex
 		isClosed bool
 	)
 
 	duration = time.Duration(millis) * time.Millisecond
 	ticker = time.NewTicker(duration)
 	clear = make(chan struct{})
+	mu = &sync.Mutex{}
+
 	wg.Add(1)
 	go func() {
 		for {
@@ -33,10 +36,12 @@ func SetInterval(f func(), millis uint32, wg *sync.WaitGroup) func() {
 		}
 	}()
 	return func() {
+		mu.Lock()
 		if !isClosed {
 			clear <- struct{}{}
 			isClosed = true
 		}
+		mu.Unlock()
 	}
 }
 
@@ -47,12 +52,15 @@ func SetTimeout(f func(), millis uint32, wg *sync.WaitGroup) func() {
 		duration time.Duration
 		timer    *time.Timer
 		clear    chan struct{}
+		mu       *sync.Mutex
 		isClosed bool
 	)
 
 	duration = time.Duration(millis) * time.Millisecond
 	timer = time.NewTimer(duration)
 	clear = make(chan struct{})
+	mu = &sync.Mutex{}
+
 	wg.Add(1)
 	go func() {
 		for {
@@ -65,16 +73,20 @@ func SetTimeout(f func(), millis uint32, wg *sync.WaitGroup) func() {
 			case <-timer.C:
 				f()
 				close(clear)
+				mu.Lock()
 				isClosed = true
+				mu.Unlock()
 				wg.Done()
 				return
 			}
 		}
 	}()
 	return func() {
+		mu.Lock()
 		if !isClosed {
 			clear <- struct{}{}
 			isClosed = true
 		}
+		mu.Unlock()
 	}
 }

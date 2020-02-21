@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// SetInterval called function 'f' every 'millis' milliseconds. It also returns a channel
-// that stops the function call 'f' by function ClearTimer(clear chan struct{})
+// SetInterval called function 'f' every 'millis' milliseconds. It also returns a function
+// that stops the function call 'f'
 func SetInterval(f func(), millis uint32, wg *sync.WaitGroup) func() {
 	var (
 		duration time.Duration
@@ -41,7 +41,7 @@ func SetInterval(f func(), millis uint32, wg *sync.WaitGroup) func() {
 }
 
 // SetTimeout called function 'f' after 'millis' milliseconds after the call. It also returns
-// a channel which prevents execution SetTimeout by function ClearTimer(clear chan struct{})
+// a function which prevents execution SetTimeout
 func SetTimeout(f func(), millis uint32, wg *sync.WaitGroup) func() {
 	var (
 		duration time.Duration

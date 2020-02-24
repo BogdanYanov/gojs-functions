@@ -85,3 +85,129 @@ OuterLoop:
 	}
 	wg.Wait()
 }
+
+func Test_jsFields_closeChannel(t *testing.T) {
+	type fields struct {
+		millis   uint32
+		do       func(*jsFields)
+		secondDo func(chan struct{})
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   bool
+	}{
+		{
+			name: "jsFields.closeChannel() case 1",
+			fields: fields{
+				millis:   1,
+				do:       func(jsF *jsFields) {},
+				secondDo: func(ch chan struct{}) {},
+			},
+			want: false,
+		},
+		{
+			name: "jsFields.closeChannel() case 2",
+			fields: fields{
+				millis: 1,
+				do: func(jsF *jsFields) {
+					jsF.closeChannel()
+				},
+				secondDo: func(ch chan struct{}) {},
+			},
+			want: true,
+		},
+		{
+			name: "jsFields.closeChannel() case 3",
+			fields: fields{
+				millis: 1,
+				do: func(jsF *jsFields) {
+					jsF.stopExecute()
+				},
+				secondDo: func(ch chan struct{}) {
+					<-ch
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			jsF := newJSFields(tt.fields.millis)
+			go tt.fields.secondDo(jsF.stopCh)
+			tt.fields.do(jsF)
+			if jsF.isChannelClosed() != tt.want {
+				t.Errorf("closeChannel() : isClosed = %v, want - %v", jsF.isClosed, tt.want)
+			}
+		})
+	}
+}
+
+func Test_jsFields_stopExecute(t *testing.T) {
+	type fields struct {
+		millis   uint32
+		do       func(*jsFields)
+		secondDo func(chan struct{})
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   bool
+	}{
+		{
+			name: "jsFields.stopExecute() case 1",
+			fields: fields{
+				millis:   1,
+				do:       func(jsF *jsFields) {},
+				secondDo: func(ch chan struct{}) {},
+			},
+			want: false,
+		},
+		{
+			name: "jsFields.stopExecute() case 2",
+			fields: fields{
+				millis: 1,
+				do: func(jsF *jsFields) {
+					jsF.closeChannel()
+				},
+				secondDo: func(ch chan struct{}) {},
+			},
+			want: true,
+		},
+		{
+			name: "jsFields.stopExecute() case 3",
+			fields: fields{
+				millis: 1,
+				do: func(jsF *jsFields) {
+					jsF.stopExecute()
+				},
+				secondDo: func(ch chan struct{}) {
+					<-ch
+				},
+			},
+			want: true,
+		},
+		{
+			name: "jsFields.stopExecute() case 4",
+			fields: fields{
+				millis: 1,
+				do: func(jsF *jsFields) {
+					jsF.closeChannel()
+					jsF.stopExecute()
+				},
+				secondDo: func(ch chan struct{}) {},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			jsF := newJSFields(tt.fields.millis)
+			go tt.fields.secondDo(jsF.stopCh)
+			tt.fields.do(jsF)
+			if jsF.isChannelClosed() != tt.want {
+				t.Errorf("stopExecute() : isClosed = %v, want - %v", jsF.isClosed, tt.want)
+			}
+		})
+	}
+}

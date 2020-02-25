@@ -44,7 +44,7 @@ func (helper *timeJSHelper) closeChannel() {
 func SetInterval(f func(), duration time.Duration) func() {
 	var (
 		timeJSHelper = newTimeJSHelper()
-		ticker             = time.NewTicker(duration)
+		ticker       = time.NewTicker(duration)
 	)
 
 	go func() {
@@ -66,7 +66,7 @@ func SetInterval(f func(), duration time.Duration) func() {
 func SetTimeout(f func(), duration time.Duration) func() {
 	var (
 		timeJSHelper = newTimeJSHelper()
-		timer              = time.NewTimer(duration)
+		timer        = time.NewTimer(duration)
 	)
 
 	go func() {

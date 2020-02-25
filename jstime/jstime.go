@@ -5,89 +5,82 @@ import (
 	"time"
 )
 
-type jsFields struct {
-	duration time.Duration
+type timeJSHelper struct {
 	stopCh   chan struct{}
 	mu       *sync.Mutex
 	isClosed bool
 }
 
-func newJSFields(millis uint32) *jsFields {
-	return &jsFields{
-		duration: time.Duration(millis) * time.Millisecond,
+func newTimeJSHelper() *timeJSHelper {
+	return &timeJSHelper{
 		stopCh:   make(chan struct{}),
 		mu:       &sync.Mutex{},
 		isClosed: false,
 	}
 }
 
-func (jsF *jsFields) isChannelClosed() bool {
-	jsF.mu.Lock()
-	defer jsF.mu.Unlock()
-	return jsF.isClosed
+func (helper *timeJSHelper) isChannelClosed() bool {
+	helper.mu.Lock()
+	defer helper.mu.Unlock()
+	return helper.isClosed
 }
 
-func (jsF *jsFields) stopExecute() {
-	if !jsF.isChannelClosed() {
-		jsF.stopCh <- struct{}{}
-		jsF.closeChannel()
+func (helper *timeJSHelper) stopExecute() {
+	if !helper.isChannelClosed() {
+		helper.stopCh <- struct{}{}
+		helper.closeChannel()
 	}
 }
 
-func (jsF *jsFields) closeChannel() {
-	jsF.mu.Lock()
-	close(jsF.stopCh)
-	jsF.isClosed = true
-	jsF.mu.Unlock()
+func (helper *timeJSHelper) closeChannel() {
+	helper.mu.Lock()
+	close(helper.stopCh)
+	helper.isClosed = true
+	helper.mu.Unlock()
 }
 
 // SetInterval called function 'f' every 'millis' milliseconds. It also returns a function
 // that stops the function call 'f'
-func SetInterval(f func(), millis uint32, wg *sync.WaitGroup) func() {
+func SetInterval(f func(), duration time.Duration) func() {
 	var (
-		jsFields = newJSFields(millis)
-		ticker   = time.NewTicker(jsFields.duration)
+		timeJSHelper = newTimeJSHelper()
+		ticker             = time.NewTicker(duration)
 	)
 
-	wg.Add(1)
 	go func() {
 		for {
 			select {
-			case <-jsFields.stopCh:
+			case <-timeJSHelper.stopCh:
 				ticker.Stop()
-				wg.Done()
 				return
 			case <-ticker.C:
 				f()
 			}
 		}
 	}()
-	return jsFields.stopExecute
+	return timeJSHelper.stopExecute
 }
 
 // SetTimeout called function 'f' after 'millis' milliseconds after the call. It also returns
 // a function which prevents execution SetTimeout
-func SetTimeout(f func(), millis uint32, wg *sync.WaitGroup) func() {
+func SetTimeout(f func(), duration time.Duration) func() {
 	var (
-		jsFields = newJSFields(millis)
-		timer    = time.NewTimer(jsFields.duration)
+		timeJSHelper = newTimeJSHelper()
+		timer              = time.NewTimer(duration)
 	)
 
-	wg.Add(1)
 	go func() {
 		for {
 			select {
-			case <-jsFields.stopCh:
+			case <-timeJSHelper.stopCh:
 				timer.Stop()
-				wg.Done()
 				return
 			case <-timer.C:
 				f()
-				jsFields.closeChannel()
-				wg.Done()
+				timeJSHelper.closeChannel()
 				return
 			}
 		}
 	}()
-	return jsFields.stopExecute
+	return timeJSHelper.stopExecute
 }
